@@ -97,7 +97,7 @@ namespace MoEmbed.Models.Metadata
             };
         }
 
-        private static Media ToMedia(MediaDetail m) => new()
+        internal static Media ToMedia(MediaDetail m) => new()
         {
             Type = MediaTypeFromString(m.Type),
             Thumbnail = new()
@@ -106,9 +106,27 @@ namespace MoEmbed.Models.Metadata
                 Width = 150,
                 Height = 150,
             },
-            RawUrl = m.MediaUrlHttps,
+            RawUrl = GetRawUrl(m),
             Location = m.ExpandedUrl,
         };
+
+        internal static string GetRawUrl(MediaDetail m)
+        {
+            if (m.Type is "video" or "animated_gif")
+            {
+                var best = m.VideoInfo?.Variants?
+                    .Where(v => v.ContentType == "video/mp4")
+                    .OrderByDescending(v => v.Bitrate ?? 0)
+                    .FirstOrDefault();
+
+                if (best != null)
+                {
+                    return best.Url;
+                }
+            }
+
+            return m.MediaUrlHttps;
+        }
 
         private static MediaTypes MediaTypeFromString(string s) => s switch
         {

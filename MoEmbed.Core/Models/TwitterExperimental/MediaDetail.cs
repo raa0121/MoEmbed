@@ -31,5 +31,8 @@ namespace MoEmbed.Models.TwitterExperimental
 
         [JsonPropertyName("url")]
         public string Url { get; set; }
+
+        [JsonPropertyName("video_info")]
+        public VideoInfo VideoInfo { get; set; }
     }
 }

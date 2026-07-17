@@ -1,6 +1,8 @@
+using MoEmbed.Models.TwitterExperimental;
 using MoEmbed.Providers;
 
 using System;
+using System.Collections.Generic;
 
 namespace MoEmbed.Models.Metadata
 {
@@ -72,6 +74,58 @@ namespace MoEmbed.Models.Metadata
             await Assert.That(data.Title).IsEqualTo(expectedDisplayName);
             await Assert.That(data.MetadataImage.Thumbnail.Url).IsEqualTo(expectedProfileImageUrl);
             await Assert.That(data.Description).IsEqualTo(expectedDescription);
+        }
+
+        [Test]
+        public async Task GetRawUrl_VideoPicksHighestBitrateMp4Test()
+        {
+            var m = new MediaDetail
+            {
+                Type = "video",
+                MediaUrlHttps = "https://pbs.twimg.com/ext_tw_video_thumb/1/pu/img/thumb.jpg",
+                VideoInfo = new VideoInfo
+                {
+                    Variants = new List<VideoVariant>
+                    {
+                        new() { Bitrate = 632000, ContentType = "video/mp4", Url = "https://video.twimg.com/ext_tw_video/1/pu/vid/480x270/low.mp4" },
+                        new() { Bitrate = 2176000, ContentType = "video/mp4", Url = "https://video.twimg.com/ext_tw_video/1/pu/vid/1280x720/high.mp4" },
+                        new() { ContentType = "application/x-mpegURL", Url = "https://video.twimg.com/ext_tw_video/1/pu/pl/playlist.m3u8" },
+                    },
+                },
+            };
+
+            await Assert.That(TwitterExperimentalMetadata.GetRawUrl(m)).IsEqualTo("https://video.twimg.com/ext_tw_video/1/pu/vid/1280x720/high.mp4");
+        }
+
+        [Test]
+        public async Task GetRawUrl_VideoFallsBackToThumbnailWhenNoMp4VariantTest()
+        {
+            var m = new MediaDetail
+            {
+                Type = "video",
+                MediaUrlHttps = "https://pbs.twimg.com/ext_tw_video_thumb/1/pu/img/thumb.jpg",
+                VideoInfo = new VideoInfo
+                {
+                    Variants = new List<VideoVariant>
+                    {
+                        new() { ContentType = "application/x-mpegURL", Url = "https://video.twimg.com/ext_tw_video/1/pu/pl/playlist.m3u8" },
+                    },
+                },
+            };
+
+            await Assert.That(TwitterExperimentalMetadata.GetRawUrl(m)).IsEqualTo(m.MediaUrlHttps);
+        }
+
+        [Test]
+        public async Task GetRawUrl_PhotoUsesMediaUrlHttpsTest()
+        {
+            var m = new MediaDetail
+            {
+                Type = "photo",
+                MediaUrlHttps = "https://pbs.twimg.com/media/photo.jpg",
+            };
+
+            await Assert.That(TwitterExperimentalMetadata.GetRawUrl(m)).IsEqualTo(m.MediaUrlHttps);
         }
     }
 }
